@@ -1,6 +1,7 @@
 #include <graphviz/cgraph.h>
 
 #include <stdio.h>
+#include <string.h>
 
 void
 vagrant_prologue() {
@@ -23,10 +24,68 @@ usage(const char *name) {
 	printf("Usage:\n\t%s dotfile\n", name);
 }
 
+struct topology {
+	char *prefix;
+	int nhosts;
+	int maxhosts;
+	struct host *hosts;
+	int nlinks;
+	int maxlinks;
+	struct link *links;
+	int nnetworks;
+	int maxnetworks;
+	struct network *networks;
+}
+
+struct network {
+	char *name;
+	char *prefix;
+	int nlinks
+	int maxlinks;
+	struct link **links;
+}
+
+struct link {
+	char *name;
+	char *addr;
+	struct network *network;
+}
+
+struct host {
+	char *name;
+	int nlinks;
+	int maxlinks;
+	struct link **links;
+}
+
+struct topology *
+create_topology(const char prefix) {
+	struct topology *t = malloc(sizeof(*t));
+
+	t->prefix = strdup(prefix);
+	
+	t->nhosts = 0;
+	t->maxhosts = 10;
+	t->hosts = calloc(t->maxhosts, sizeof(*t->hosts));
+
+	t->nlinks = 0;
+	t->maxlinks = 10;
+	t->links = calloc(t->maxlinks, sizeof(*t->links));
+
+	t->nnetworks = 0;
+	t->maxnetworks = 10;
+	t->networks = calloc(t->maxnetworks, sizeof(*t->networks));
+}
+
+void
+topology_add_host(char *name) {
+}
+
 int
 main(int argc, char **argv) {
 	Agraph_t *g;
 	FILE *f;
+	struct topology *t = create_topology("192.168");
 
 	if (argc != 2) {
 		usage(argv[0]);
@@ -42,10 +101,20 @@ main(int argc, char **argv) {
 		printf("Failed to parse %s\n", argv[1]);
 	}
 
-	vagrant_prologue();
+	/* create hosts */
 	for (Agnode_t *n = agfstnode(g); n; n = agnxtnode(g, n)) {
-		vagrant_host(agnameof(n));
+		topology_add_host(n, strdup(agnameof(n)));
 	}
+
+	/* link hosts */
+	for (Agnode_t *n = agfstnode(g); n; n = agnxtnode(g, n)) {
+		for (Agedge_t *e = agfstedge(g, n); e; e = agnxtedge(g, e, n)) {
+			network_connect_hosts(n, agnameof(n), agnameof(e->node));
+		}
+	}
+
+	vagrant_prologue();
+	vagrant_host(agnameof(n));
 	vagrant_epilogue();
 
 	return 0;
