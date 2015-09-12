@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 void
 vagrant_prologue() {
@@ -35,31 +36,31 @@ struct topology {
 	int nnetworks;
 	int maxnetworks;
 	struct network *networks;
-}
+};
 
 struct network {
 	char *name;
 	char *prefix;
-	int nlinks
+	int nlinks;
 	int maxlinks;
 	struct link **links;
-}
+};
 
 struct link {
 	char *name;
 	char *addr;
 	struct network *network;
-}
+};
 
 struct host {
 	char *name;
 	int nlinks;
 	int maxlinks;
 	struct link **links;
-}
+};
 
 struct topology *
-create_topology(const char prefix) {
+create_topology(const char *prefix) {
 	struct topology *t = malloc(sizeof(*t));
 
 	t->prefix = strdup(prefix);
@@ -75,10 +76,19 @@ create_topology(const char prefix) {
 	t->nnetworks = 0;
 	t->maxnetworks = 10;
 	t->networks = calloc(t->maxnetworks, sizeof(*t->networks));
+
+	return t;
 }
 
 void
-topology_add_host(char *name) {
+topology_add_host(struct topology *t, char *name) {
+	if (t->nhosts == t->maxhosts) {
+		t->maxhosts <<= 2;
+		t->hosts = realloc(t->hosts, sizeof(*t->hosts) * t->maxhosts);
+	}
+
+	struct host *h = &t->hosts[t->nhosts++];
+	h->name = name;
 }
 
 int
@@ -103,18 +113,18 @@ main(int argc, char **argv) {
 
 	/* create hosts */
 	for (Agnode_t *n = agfstnode(g); n; n = agnxtnode(g, n)) {
-		topology_add_host(n, strdup(agnameof(n)));
+		topology_add_host(t, strdup(agnameof(n)));
 	}
 
 	/* link hosts */
 	for (Agnode_t *n = agfstnode(g); n; n = agnxtnode(g, n)) {
 		for (Agedge_t *e = agfstedge(g, n); e; e = agnxtedge(g, e, n)) {
-			network_connect_hosts(n, agnameof(n), agnameof(e->node));
+			//network_connect_hosts(n, agnameof(n), agnameof(e->node));
 		}
 	}
 
 	vagrant_prologue();
-	vagrant_host(agnameof(n));
+	//vagrant_host(agnameof(n));
 	vagrant_epilogue();
 
 	return 0;
