@@ -12,13 +12,15 @@ vagrant_prologue() {
 void
 vagrant_host(const char *name) {
 	printf("\tconfig.vm.define \"%s\" do |%s|\n", name, name);
-	printf("\tend\n");
+	printf("\t\t%s.vm.box = \"debian/wheezy64\"\n", name);
+	printf("\tend\n\n");
 }
 
 void
 vagrant_epilogue() {
 	printf("end\n");
 }
+
 
 void
 usage(const char *name) {
@@ -59,6 +61,14 @@ struct host {
 	struct link **links;
 };
 
+void
+vagrant_render(struct topology *t) {
+	vagrant_prologue();
+	for (int i = 0; i < t->nhosts; i++)
+		vagrant_host(t->hosts[i].name);
+	vagrant_epilogue();
+}
+
 struct topology *
 create_topology(const char *prefix) {
 	struct topology *t = malloc(sizeof(*t));
@@ -89,6 +99,27 @@ topology_add_host(struct topology *t, char *name) {
 
 	struct host *h = &t->hosts[t->nhosts++];
 	h->name = name;
+}
+
+struct host *
+topology_find_host(struct topology *t, const char *name) {
+	for (int i = 0; i < t->nhosts; i++) {
+		if (strcmp(name, t->hosts[i].name) == 0)
+			return &t->hosts[i];
+	}
+
+	return NULL;
+}
+
+void
+topology_connect_hosts(struct topology *t, const char *a, const char *b) {
+	struct host *a = topology_find_host(t, a);
+	struct host *b = topology_find_host(t, b);
+
+	if (!(a && b))
+		return;
+
+	// continue here	
 }
 
 int
@@ -123,9 +154,8 @@ main(int argc, char **argv) {
 		}
 	}
 
-	vagrant_prologue();
-	//vagrant_host(agnameof(n));
-	vagrant_epilogue();
+	vagrant_render(t);
+
 
 	return 0;
 }
