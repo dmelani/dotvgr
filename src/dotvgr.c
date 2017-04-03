@@ -112,11 +112,12 @@ topology_find_host(struct topology *t, const char *name) {
 }
 
 void
-topology_connect_hosts(struct topology *t, const char *a, const char *b) {
-	struct host *a = topology_find_host(t, a);
-	struct host *b = topology_find_host(t, b);
+topology_connect_hosts(struct topology *t, const char *a, const char *a_addr, const char *b, const char *b_addr) {
+	struct host *h_a = topology_find_host(t, a);
+	struct host *h_b = topology_find_host(t, b);
 
-	if (!(a && b))
+	printf("DEBUG %s %s -- %s %s\n", a, a_addr, b, b_addr);
+	if (!(h_a && h_b))
 		return;
 
 	// continue here	
@@ -150,7 +151,7 @@ main(int argc, char **argv) {
 	/* link hosts */
 	for (Agnode_t *n = agfstnode(g); n; n = agnxtnode(g, n)) {
 		for (Agedge_t *e = agfstedge(g, n); e; e = agnxtedge(g, e, n)) {
-			//network_connect_hosts(n, agnameof(n), agnameof(e->node));
+			topology_connect_hosts(t, agnameof(agtail(e)),agget(e, "taillabel"), agnameof(aghead(e)), agget(e, "headlabel"));
 		}
 	}
 
